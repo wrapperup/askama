@@ -685,3 +685,41 @@ fn test_missing_space_after_kw() {
         "unable to parse template:\n\n\"{%leta=b%}\""
     ));
 }
+
+#[test]
+fn test_macro_invocation() {
+    let syntax = Syntax::default();
+    assert_eq!(
+        super::parse("{{a!()}}", &syntax).unwrap(),
+        [Node::Expr(Ws(None, None), Expr::RustMacro(vec!["a"], ""))],
+    );
+    assert_eq!(
+        super::parse("{{a !()}}", &syntax).unwrap(),
+        [Node::Expr(Ws(None, None), Expr::RustMacro(vec!["a"], ""))],
+    );
+    assert_eq!(
+        super::parse("{{a! ()}}", &syntax).unwrap(),
+        [Node::Expr(Ws(None, None), Expr::RustMacro(vec!["a"], ""))],
+    );
+    assert_eq!(
+        super::parse("{{a ! ()}}", &syntax).unwrap(),
+        [Node::Expr(Ws(None, None), Expr::RustMacro(vec!["a"], ""))],
+    );
+    assert_eq!(
+        super::parse("{{A!()}}", &syntax).unwrap(),
+        [Node::Expr(Ws(None, None), Expr::RustMacro(vec!["A"], ""),)],
+    );
+    assert_eq!(
+        super::parse("{{a::b::c!( hello )}}", &syntax).unwrap(),
+        [Node::Expr(
+            Ws(None, None),
+            Expr::RustMacro(vec!["a", "b", "c"], " hello "),
+        )],
+    );
+    assert_eq!(
+        &*super::parse("{{a.b.c!( hello )}}", &syntax)
+            .unwrap_err()
+            .msg,
+        "problems parsing template source at row 1, column 7 near:\n\"!( hello )}}\"",
+    );
+}
